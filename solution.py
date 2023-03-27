@@ -1,5 +1,7 @@
 import copy
-grid = [[3,1,1,1,1,1,1], [0,0,0,0,1,0,0], [1,0,0,0,0,0,1], [0,1,0,0,0,0,0], [1,1,1,1,1,1,1], [0,0,0,0,0,0,4]]
+import numpy as np
+
+grid = np.loadtxt('input.txt', dtype=int)
 
 def countGreensNeigb(grid1, i, j):
     i_min = max(0, i-1)
@@ -49,18 +51,17 @@ def play(grid1, pos, last, t):
     print(f'Tempo: {t}')
     print(f'Posição: {pos}')
     for i in grid1:
-        if grid1.index(i) == pos[0]:
+        if np.where(grid1==i) == pos[0]:
             a = i.copy()
             a[pos[1]] = 'X'
-            print(a)
+            print(list(a))
         else:
-            print(i)
+            print(list(i))
     input()
     print()
 
     if grid1[pos[0]][pos[1]] == 4:
         return 1
-        pass
     else:
         grid2 = updateGrid(grid1)
         moves_list = moves(*pos)
