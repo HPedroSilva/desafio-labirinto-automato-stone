@@ -1,7 +1,40 @@
 import copy
 import numpy as np
+import random
+
+# Inicialização dos parâmetros do ACO
+K = 50 # Número de formigas
+alpha = 1 # Influência do feromônio
+beta = 1 # Influência da distância
+iteracoes = 100 # Quantidade de iterações
+rho = 0.5 # Taxa de evaporação
+Q = 1 # Quantidade feromônio liberado por cada formiga por iteração
 
 grid = np.loadtxt('input.txt', dtype=int)
+ferom = np.ones((grid.shape[0], grid.shape[1])) # Matriz de feromônio, indica a quantidade de feromônio em cada nó
+
+def atualizaFerom(formigas_dist, formigas_caminho):
+    global ferom
+    feromX = np.zeros((grid.shape[0], grid.shape[0])) # Matriz de feromonios provisória de todas as formigas
+
+    for k in range (0, K): # Para cada formiga
+        Dferom = Q / formigas_dist[k] # quantidade de feromonio que a formiga vai depositar
+
+        for l in range(1, len(formigas_caminho[k])): # Iterar na rota da formiga k
+            i = formigas_caminho[k][l-1]
+            j = formigas_caminho[k][l]
+            feromX[i][j] += Dferom # Inserindo o feromonio da formiga k na aresta ij da matriz provisória
+
+    ferom = (1 - rho) * ferom + feromX # Atualizando a matriz de feromonio segundo a equação (2)
+
+def roleta(prob):
+    r = random.random() # Define o valor aleatorio [0-1]
+    contador = 0
+    soma = 0
+    while (soma <= r): # Enquanto a soma for menor do que o valor escolhido        
+        soma += prob[contador] # probabilidade da aresta
+        contador += 1 
+    return contador - 1
 
 def countGreensNeigb(grid1, i, j):
     i_min = max(0, i-1)
@@ -39,7 +72,7 @@ def moves(i, j):
     return moves_list
 
 def calc_dist(move):
-    return move[0], move[1], 6 - move[0] + 7 - move[1]
+    return move[0], move[1], 64 - move[0] + 84 - move[1]
 
 def calc_dist_list(list_moves):
     list_moves_dist = []
@@ -47,7 +80,7 @@ def calc_dist_list(list_moves):
         list_moves_dist.append(calc_dist(move))
     return list_moves_dist
 
-def play(grid1, pos, last, t):
+def play(grid1, pos, t):
     print(f'Tempo: {t}')
     print(f'Posição: {pos}')
     for i in grid1:
@@ -65,18 +98,17 @@ def play(grid1, pos, last, t):
     else:
         grid2 = updateGrid(grid1)
         moves_list = moves(*pos)
-        moves_list = calc_dist_list(moves_list)
-        moves_list.sort(key = lambda e: e[2])
+        moves_list = [move for move in moves_list if grid2[move[0]][move[1]] != 1]
+        dist_moves_list = [i[2] for i in calc_dist_list(moves_list)]
+        atratividade = 1 / np.array([dist_moves_list])
 
-        if last in moves_list:
-           moves_list.remove(last)
+        prob = (ferom[*moves_list] ** alpha * atratividade ** beta) / (ferom[*moves_list] ** alpha).dot((atratividade ** beta).T) # Vetor de probabilidades dos nós possíveis
+        prox = roleta(prob)
 
-        for move in moves_list:
-            if grid2[move[0]][move[1]] == 0 or grid2[move[0]][move[1]] == 4:
-                print(f'Próx mov: {calc_dist(pos)}')
-                a = play(grid2, (move[0], move[1]), calc_dist(pos), t+1)
-                if a:
-                    return 1
+        print(f'Próx mov: {calc_dist(moves_list[prox])}')
+        a = play(grid2, calc_dist(moves_list[prox]), t+1)
+        if a:
+            return 1
         return 0
 
 grid_1 = copy.deepcopy(grid)
@@ -88,4 +120,4 @@ grid_1 = copy.deepcopy(grid)
 #     print()
 
 
-print(play(grid_1, (0, 0), (0, 0), 0))
+print(play(grid_1, (0, 0), 0))
