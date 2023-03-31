@@ -1,7 +1,7 @@
 import copy
 import numpy as np
 
-grid = np.loadtxt('input.txt', dtype=int)
+grid = np.loadtxt('input2.txt', dtype=int)   
 
 def countGreensNeigb(grid1, i, j):
     i_min = max(0, i-1)
@@ -39,7 +39,7 @@ def moves(i, j):
     return moves_list
 
 def calc_dist(move):
-    return move[0], move[1], 6 - move[0] + 7 - move[1]
+    return 3 - move[0] + 7 - move[1]
 
 def calc_dist_list(list_moves):
     list_moves_dist = []
@@ -47,45 +47,42 @@ def calc_dist_list(list_moves):
         list_moves_dist.append(calc_dist(move))
     return list_moves_dist
 
-def play(grid1, pos, last, t):
-    print(f'Tempo: {t}')
-    print(f'Posição: {pos}')
-    for i in grid1:
-        if np.where(grid1==i) == pos[0]:
-            a = i.copy()
-            a[pos[1]] = 'X'
-            print(list(a))
-        else:
-            print(list(i))
-    input()
+def print_grid(pos):
+    for i in range(0, grid.shape[0]):
+        for j in range(0, grid.shape[1]):
+            if i == pos[0] and j == pos[1]:
+                print('X', end='')
+            else:
+                print(grid[i][j], end='')
+            print(" ", end='')
+        print()
     print()
 
-    if grid1[pos[0]][pos[1]] == 4:
-        return 1
-    else:
-        grid2 = updateGrid(grid1)
-        moves_list = moves(*pos)
-        moves_list = calc_dist_list(moves_list)
-        moves_list.sort(key = lambda e: e[2])
+open_list = [(0,0)]
+closed_list = []
+cost_F = {(0, 0): calc_dist((0, 0))}
+cost_G = {(0, 0): 0}
+cost_H = {}
+parent = {(0, 0): (0, 0)}
 
-        if last in moves_list:
-           moves_list.remove(last)
+print(cost_F)
 
-        for move in moves_list:
-            if grid2[move[0]][move[1]] == 0 or grid2[move[0]][move[1]] == 4:
-                print(f'Próx mov: {calc_dist(pos)}')
-                a = play(grid2, (move[0], move[1]), calc_dist(pos), t+1)
-                if a:
-                    return 1
-        return 0
-
-grid_1 = copy.deepcopy(grid)
-# while True:
-#     grid_1 = updateGrid(grid_1)
-#     for i in grid_1:
-#         print(i)
-#     input()
-#     print()
-
-
-print(play(grid_1, (0, 0), (0, 0), 0))
+while open_list and (3, 7) not in closed_list:
+    mov_atual = open_list.pop(open_list.index(min(open_list, key=lambda e: cost_F[e])))
+    closed_list.append(mov_atual)
+    print_grid(mov_atual)
+    moves_list = moves(*mov_atual)
+    for prox_mov in moves_list:
+        if grid[prox_mov[0]][prox_mov[1]] != 1 and prox_mov not in closed_list:
+            if prox_mov not in open_list:
+                open_list.append(prox_mov)
+                parent[prox_mov] = mov_atual
+                cost_G[prox_mov] = cost_G[parent[prox_mov]] + 1
+                cost_H[prox_mov] = calc_dist(prox_mov)
+                cost_F[prox_mov] = cost_G[prox_mov] + cost_H[prox_mov]
+            elif cost_G[mov_atual] + 1 < cost_G[prox_mov]:
+                parent[prox_mov] = mov_atual
+                cost_G[prox_mov] = cost_G[parent[prox_mov]] + 1
+                cost_H[prox_mov] = calc_dist(prox_mov)
+                cost_F[prox_mov] = cost_G[prox_mov] + cost_H[prox_mov]
+                
